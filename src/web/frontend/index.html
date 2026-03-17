@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>ORBM — ORB Monitoring Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        fontFamily: {
+          sans: ['Outfit', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          surface: { 0: '#0C0E12', 1: '#12151A', 2: '#181B22', 3: '#1E222B', 4: '#252A35' },
+          accent: { DEFAULT: '#6366F1', dim: 'rgba(99,102,241,0.12)', mid: 'rgba(99,102,241,0.25)' },
+          emerald: { DEFAULT: '#10B981', dim: 'rgba(16,185,129,0.12)' },
+          amber: { DEFAULT: '#F59E0B', dim: 'rgba(245,158,11,0.12)' },
+          rose: { DEFAULT: '#F43F5E', dim: 'rgba(244,63,94,0.12)' },
+          slate: { 1: '#E2E8F0', 2: '#94A3B8', 3: '#64748B', 4: '#475569', 5: '#334155', 6: '#1E293B' },
+        },
+      }}
+    };
+  </script>
+  <script src="vendor/react.js"></script>
+  <script src="vendor/react-dom.js"></script>
+  <script src="vendor/babel.min.js"></script>
+  <style>
+    :root {
+      --bg-0: #0C0E12;
+      --bg-1: #12151A;
+      --bg-2: #181B22;
+      --bg-3: #1E222B;
+      --bg-4: #252A35;
+      --border: #1E293B;
+      --border-light: #334155;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-faint: #64748B;
+      --accent: #6366F1;
+      --accent-dim: rgba(99,102,241,0.12);
+      --accent-mid: rgba(99,102,241,0.25);
+      --req: #F59E0B;
+      --req-dim: rgba(245,158,11,0.12);
+      --rep: #10B981;
+      --rep-dim: rgba(16,185,129,0.12);
+      --err: #F43F5E;
+      --err-dim: rgba(244,63,94,0.12);
+      --key: #818CF8;
+      --string: #34D399;
+      --number: #60A5FA;
+      --bool: #FB923C;
+      --glass: rgba(18,21,26,0.75);
+      --font-sans: 'Outfit', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg-0);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+    #root { height: 100vh; display: flex; flex-direction: column; position: relative; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+    input::placeholder { color: var(--text-faint); }
+    input:focus { outline: none; }
+
+    .noise-bg {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0; transform: scale(2.2); }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slide-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+    @keyframes card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes count-pop { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .animate-card-in { animation: card-in 0.25s ease-out both; }
+    .animate-fade-in { animation: fade-in 0.2s ease-out both; }
+    .drawer-enter { animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .drawer-exit { animation: slide-out-right 0.25s ease-in both; }
+    .count-pop { animation: count-pop 0.3s ease-out; }
+
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .msg-card {
+      transition: all 0.12s ease;
+      border: 1px solid transparent;
+    }
+    .msg-card:hover {
+      background: var(--bg-3) !important;
+      border-color: var(--border-light);
+    }
+    .msg-card.selected {
+      background: var(--bg-4) !important;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-dim), 0 0 20px rgba(99,102,241,0.08);
+    }
+
+    .tab-btn {
+      position: relative;
+      transition: color 0.15s ease;
+    }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; right: 50%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      transition: left 0.2s ease, right 0.2s ease;
+    }
+    .tab-btn.active::after { left: 0; right: 0; }
+    .tab-btn.active { color: var(--accent) !important; }
+
+    .glass-panel {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .gradient-line {
+      background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 30%, #EC4899 60%, #F59E0B 100%);
+    }
+
+    .doc-tree .doc-children {
+      border-left: 1px solid var(--border);
+      margin-left: 10px;
+      padding-left: 14px;
+    }
+    .mono-value { word-break: break-word; }
+
+    .search-input:focus-within {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .overlay-backdrop {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .detail-scrollbar::-webkit-scrollbar { width: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useReducer, useCallback, useRef, useMemo } = React;
+
+    const WS_URL = `ws://${location.host}/ws`;
+    const API = `${location.origin}/api`;
+
+    const initial = {
+      connected: false, reconnecting: false,
+      objects: [], messages: [],
+      selectedPath: null, selectedMessage: null,
+      filterOp: '',
+      stats: { total: 0, avg_latency_ms: null, errors_60s: 0 },
+    };
+
+    function reducer(state, action) {
+      switch (action.type) {
+        case 'WS_OPEN': return { ...state, connected: true, reconnecting: false };
+        case 'WS_CLOSE': return { ...state, connected: false };
+        case 'WS_RECONNECTING': return { ...state, reconnecting: true };
+        case 'OBJECTS': return { ...state, objects: action.payload };
+        case 'OBJECTS_UPDATED': return { ...state, objects: action.payload };
+        case 'GIOP_MESSAGE': return { ...state, messages: [action.payload, ...state.messages].slice(0, 100) };
+        case 'REQUEST_TIMEOUT': return { ...state };
+        case 'MESSAGES_LOAD': return { ...state, messages: action.payload };
+        case 'CLEAR_MESSAGES': return { ...state, messages: [], selectedMessage: null };
+        case 'SELECT_PATH': return { ...state, selectedPath: action.payload };
+        case 'SELECT_MESSAGE': return { ...state, selectedMessage: action.payload };
+        case 'SET_FILTER': return { ...state, filterOp: action.payload.op || '' };
+        case 'STATS': return { ...state, stats: action.payload };
+        default: return state;
+      }
+    }
+
+    function useWs(onMessage) {
+      const [retryCount, setRetryCount] = useState(0);
+      useEffect(() => {
+        let socket = null; let timeout = null;
+        const delay = Math.min(3000 * Math.pow(2, retryCount), 30000);
+        socket = new WebSocket(WS_URL);
+        socket.onopen = () => onMessage({ type: 'WS_OPEN' });
+        socket.onclose = () => { onMessage({ type: 'WS_CLOSE' }); onMessage({ type: 'WS_RECONNECTING' }); timeout = setTimeout(() => setRetryCount(c => c + 1), delay); };
+        socket.onmessage = (e) => { try { onMessage(JSON.parse(e.data)); } catch(_){} };
+        return () => { if (timeout) clearTimeout(timeout); if (socket) socket.close(); };
+      }, [retryCount]);
+    }
+
+    const msgTypeIcon = (t) => {
+      if (t === 'REQUEST') return { icon: '→', color: 'var(--req)', bg: 'var(--req-dim)', label: 'Request' };
+      if (t === 'REPLY') return { icon: '←', color: 'var(--rep)', bg: 'var(--rep-dim)', label: 'Reply' };
+      if (t === 'LOCATE_REQUEST' || t === 'LOCATE_REPLY') return { icon: '⇄', color: 'var(--accent)', bg: 'var(--accent-dim)', label: 'LOC' };
+      return { icon: '•', color: 'var(--text-muted)', bg: 'var(--bg-3)', label: t?.slice(0,3) || '?' };
+    };
+
+    const replyColor = (st) => {
+      if (st === 'NO_EXCEPTION') return { fg: 'var(--rep)', bg: 'var(--rep-dim)' };
+      if (st === 'USER_EXCEPTION' || st === 'SYSTEM_EXCEPTION') return { fg: 'var(--err)', bg: 'var(--err-dim)' };
+      return { fg: 'var(--req)', bg: 'var(--req-dim)' };
+    };
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+    }
+
+    function formatHexDump(hexStr) {
+      const bytesPerLine = 16;
+      const hexPerLine = bytesPerLine * 2;
+      const lines = [];
+      for (let i = 0; i < hexStr.length; i += hexPerLine) {
+        const chunk = hexStr.slice(i, i + hexPerLine);
+        const offset = (i / 2).toString(16).toUpperCase().padStart(4, '0');
+        const hexPart = chunk.match(/.{1,2}/g)?.join(' ') ?? chunk;
+        lines.push(`${offset}:  ${hexPart}`);
+      }
+      return lines.join('\n');
+    }
+
+    function countTopLevelFields(value) {
+      const s = String(value || '').trim();
+      if (!(s.startsWith('{') && s.endsWith('}'))) return 0;
+      let depth = 0, inString = false, fields = 1;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i], prev = i > 0 ? s[i - 1] : '';
+        if (ch === '"' && prev !== '\\') inString = !inString;
+        if (inString) continue;
+        if (ch === '{' || ch === '[') depth++;
+        else if (ch === '}' || ch === ']') depth--;
+        else if (ch === ',' && depth === 1) fields++;
+      }
+      return fields;
+    }
+
+    function formatStructuredValue(raw) {
+      const s = String(raw ?? '');
+      if (!(s.includes('{') || s.includes('['))) return s;
+      let out = '', depth = 0, inString = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i], prev = i > 0 ? s[i - 1] : '';
+        if (ch === '"' && prev !== '\\') { inString = !inString; out += ch; continue; }
+        if (inString) { out += ch; continue; }
+        if (ch === '{' || ch === '[') { out += ch; depth++; out += '\n' + '  '.repeat(depth); continue; }
+        if (ch === '}' || ch === ']') { depth = Math.max(0, depth - 1); out += '\n' + '  '.repeat(depth) + ch; continue; }
+        if (ch === ',') { out += ',\n' + '  '.repeat(depth); continue; }
+        out += ch;
+      }
+      return out.replace(/\n{3,}/g, '\n\n');
+    }
+
+    function messageStats(msg) {
+      const params = Array.isArray(msg.params) ? msg.params : [];
+      const paramCount = params.length;
+      const fieldCount = params.reduce((acc, p) => acc + (countTopLevelFields(p?.value) > 0 ? countTopLevelFields(p.value) : (p?.value != null ? 1 : 0)), 0);
+      return { paramCount, fieldCount };
+    }
+
+    function resolveObjectName(msg, objects, allMessages) {
+      if ((msg.msg_type === 'REPLY' || msg.msg_type === 'Reply') && msg.matched_id != null && allMessages?.length > 0) {
+        const matched = allMessages.find(m => m.id === msg.matched_id);
+        if (matched) {
+          const name = resolveObjectName(matched, objects, null);
+          if (name) return name;
+        }
+      }
+      const pathVal = msg.object_path && String(msg.object_path).trim() && msg.object_path !== '-';
+      if (pathVal) {
+        const seg = msg.object_path.split('/').filter(Boolean).pop();
+        if (seg) return seg;
+      }
+      const d = (msg.direction || '').toLowerCase();
+      const isClientToServer = d.startsWith('client') || d === 'client_to_server';
+      const port = isClientToServer ? Number(msg.dst_port) : Number(msg.src_port);
+      const onPort = (objects || []).filter(o => Number(o.port) === port);
+      if (onPort.length === 1 && onPort[0].path) {
+        const seg = onPort[0].path.split('/').filter(Boolean).pop();
+        if (seg) return seg;
+      }
+      return null;
+    }
+
+    function getFlowLabels(msg, objects, allMessages) {
+      const objName = resolveObjectName(msg, objects, allMessages) || 'Object';
+      const peer = (ip, port) => `Peer (${ip}:${port})`;
+      const endpoint = (name, ip, port) => `${name} (${ip}:${port})`;
+      const d = (msg.direction || '').toLowerCase();
+      const isRequestFromInitiator = d.startsWith('client') || d === 'client_to_server';
+      if (isRequestFromInitiator) return { from: peer(msg.src_ip, msg.src_port), to: endpoint(objName, msg.dst_ip, msg.dst_port) };
+      return { from: endpoint(objName, msg.src_ip, msg.src_port), to: peer(msg.dst_ip, msg.dst_port) };
+    }
+
+    function valueColor(typeName, value) {
+      if (typeName === 'string' || (typeof value === 'string' && value.startsWith('"'))) return 'var(--string)';
+      if (['long', 'short', 'unsigned long', 'long long', 'float', 'double'].includes(typeName)) return 'var(--number)';
+      if (typeName === 'boolean') return 'var(--bool)';
+      return 'var(--text)';
+    }
+
+    function buildDocTree(msg, objects, allMessages) {
+      const root = { key: 'document', type: msg.msg_type, children: [] };
+      const flow = getFlowLabels(msg, objects, allMessages);
+      const meta = {
+        key: '_meta', type: 'object',
+        children: [
+          { key: 'operation', value: msg.operation ?? null },
+          { key: 'object_path', value: msg.object_path ?? null },
+          { key: 'object_type_id', value: msg.object_type_id ?? null },
+          { key: 'source', value: flow.from },
+          { key: 'target', value: flow.to },
+          { key: 'direction', value: msg.direction ?? null },
+          { key: 'request_id', value: msg.request_id != null ? String(msg.request_id) : null },
+          { key: 'timestamp_ms', value: msg.timestamp_ms != null ? String(msg.timestamp_ms) : null },
+          { key: 'src', value: `${msg.src_ip}:${msg.src_port}` },
+          { key: 'dst', value: `${msg.dst_ip}:${msg.dst_port}` },
+          { key: 'giop_version', value: msg.giop_version ?? null },
+          { key: 'size_bytes', value: msg.size_bytes != null ? String(msg.size_bytes) : null },
+          ...(msg.latency_ms != null ? [{ key: 'latency_ms', value: String(msg.latency_ms) }] : []),
+          ...(msg.is_oneway ? [{ key: 'oneway', value: 'true' }] : []),
+          ...(msg.reply_status ? [{ key: 'reply_status', value: msg.reply_status }] : []),
+        ],
+      };
+      root.children.push(meta);
+      if (msg.params?.length > 0) {
+        root.children.push({
+          key: 'params', type: 'array',
+          children: msg.params.map((p, i) => ({
+            key: String(i), type: 'object',
+            children: [
+              { key: 'name', value: p.name },
+              { key: 'type_name', value: p.type_name },
+              { key: 'field_count', value: String(countTopLevelFields(p.value) || 1) },
+              { key: 'value', value: String(p.value) },
+            ],
+          })),
+        });
+      }
+      if (msg.return_value != null) {
+        root.children.push({
+          key: 'return_value', type: msg.return_value.type_name || 'object',
+          children: [
+            { key: 'type_name', value: msg.return_value.type_name },
+            { key: 'value', value: String(msg.return_value.value) },
+          ],
+        });
+      }
+      return root;
+    }
+
+    /* ── UI Components ── */
+
+    function StatusIndicator({ connected, reconnecting }) {
+      const color = reconnecting ? '#F59E0B' : connected ? '#10B981' : '#64748B';
+      const label = reconnecting ? 'Reconnecting' : connected ? 'Live' : 'Disconnected';
+      return (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'var(--bg-3)' }}>
+          <span className="relative flex h-2 w-2">
+            {(connected || reconnecting) && (
+              <span className="absolute inset-0 rounded-full" style={{ background: color, animation: 'pulse-glow 2s ease-in-out infinite' }} />
+            )}
+            <span className="relative rounded-full h-2 w-2" style={{ background: color, animation: connected ? 'pulse-dot 2s ease-in-out infinite' : 'none' }} />
+          </span>
+          <span className="text-xs font-medium" style={{ color }}>{label}</span>
+        </div>
+      );
+    }
+
+    function StatCard({ label, value, icon, accentColor, bgColor }) {
+      return (
+        <div className="stat-card rounded-xl border p-4 flex items-center gap-3.5" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: bgColor }}>
+            <span style={{ color: accentColor }}>{icon}</span>
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-medium tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>{label}</div>
+            <div className="text-xl font-bold font-mono mt-0.5 count-pop" style={{ color: 'var(--text)' }}>{value}</div>
+          </div>
+          <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl" style={{ background: accentColor, opacity: 0.6 }} />
+        </div>
+      );
+    }
+
+    function DocNode({ node, depth = 0 }) {
+      const [open, setOpen] = useState(depth < 2);
+      const hasChildren = node.children && node.children.length > 0;
+      const isOpen = hasChildren ? open : true;
+      const isValueNode = node.key === 'value' && typeof node.value === 'string';
+      const prettyValue = isValueNode ? formatStructuredValue(node.value) : null;
+      const multilineValue = !!prettyValue && prettyValue.includes('\n');
+      return (
+        <div className="doc-tree doc-line select-text">
+          {hasChildren ? (
+            <>
+              <div
+                className="flex items-center gap-1.5 py-1 min-h-[26px] rounded-md cursor-pointer transition-colors"
+                style={{ paddingLeft: depth * 16 + 6, background: 'transparent' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                onClick={() => setOpen(!open)}
+              >
+                <span className="w-4 shrink-0 text-xs" style={{ color: 'var(--text-faint)' }}>{isOpen ? '▼' : '▶'}</span>
+                <span className="font-mono text-xs font-medium" style={{ color: 'var(--key)' }}>{node.key}</span>
+                {node.type && <span className="text-[10px] ml-0.5 font-mono" style={{ color: 'var(--text-faint)' }}>({node.type})</span>}
+              </div>
+              {isOpen && (
+                <div className="doc-children">
+                  {node.children.map((child, i) => <DocNode key={child.key + i} node={child} depth={depth + 1} />)}
+                </div>
+              )}
+            </>
+          ) : (
+            <div
+              className="flex items-start gap-2 py-1 min-h-[26px] rounded-md font-mono text-xs transition-colors"
+              style={{ paddingLeft: depth * 16 + 6, background: 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <span style={{ color: 'var(--key)' }}>{node.key}</span>
+              {node.type && <span className="text-[10px] shrink-0 font-mono" style={{ color: 'var(--text-faint)' }}>({node.type})</span>}
+              {multilineValue ? (
+                <pre className="mono-value break-words whitespace-pre-wrap text-[11px] leading-5 rounded-lg px-3 py-2 overflow-x-auto max-w-full border" style={{ color: valueColor(node.type, node.value), background: 'var(--bg-0)', borderColor: 'var(--border)' }}>{prettyValue}</pre>
+              ) : (
+                <span className="mono-value break-words" style={{ color: valueColor(node.type, node.value) }}>{prettyValue ?? node.value ?? '—'}</span>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function MessageCard({ msg, objects, messages, isSelected, onSelect }) {
+      const ti = msgTypeIcon(msg.msg_type);
+      const isReply = msg.msg_type === 'REPLY';
+      const isErr = isReply && (msg.reply_status === 'SYSTEM_EXCEPTION' || msg.reply_status === 'USER_EXCEPTION');
+      const stats = messageStats(msg);
+      const rc = isReply && msg.reply_status ? replyColor(msg.reply_status) : null;
+      const showExceptionStatus = isReply && (msg.reply_status === 'SYSTEM_EXCEPTION' || msg.reply_status === 'USER_EXCEPTION');
+      const objName = resolveObjectName(msg, objects, messages) || (msg.object_path && msg.object_path !== '-' ? msg.object_path.split('/').pop() : '—');
+
+      const badgeStyle = isReply
+        ? (isErr ? { color: 'var(--err)', background: 'var(--err-dim)' } : { color: 'var(--rep)', background: 'var(--rep-dim)' })
+        : { color: 'var(--req)', background: 'var(--req-dim)' };
+
+      return (
+        <div
+          onClick={onSelect}
+          className={`msg-card rounded-lg px-4 py-3 cursor-pointer ${isSelected ? 'selected' : ''}`}
+          style={{ background: isSelected ? 'var(--bg-4)' : 'var(--bg-2)' }}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="font-mono text-xs font-bold rounded-md w-8 h-8 flex items-center justify-center shrink-0"
+              style={badgeStyle}
+              title={ti.label}
+            >
+              {ti.icon}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-semibold truncate" style={{ color: 'var(--text)' }} title={msg.operation}>
+                  {msg.operation || '—'}
+                </span>
+                {stats.paramCount > 0 && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                    P{stats.paramCount}{stats.fieldCount > 0 ? ` · F${stats.fieldCount}` : ''}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-mono text-[11px] truncate" style={{ color: 'var(--text-faint)' }} title={msg.object_path}>{objName}</span>
+                <span className="text-[10px]" style={{ color: 'var(--border-light)' }}>·</span>
+                <span className="font-mono text-[11px] shrink-0" style={{ color: 'var(--text-faint)' }}>{formatTime(msg.timestamp_ms)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--border-light)' }}>·</span>
+                <span className="font-mono text-[11px] shrink-0" style={{ color: 'var(--text-faint)' }}>{msg.size_bytes ?? 0} B</span>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              {msg.latency_ms != null ? (
+                <span className="font-mono text-xs font-semibold" style={{ color: msg.latency_ms < 10 ? 'var(--rep)' : msg.latency_ms < 100 ? 'var(--req)' : 'var(--err)' }}>
+                  {msg.latency_ms.toFixed(1)} ms
+                </span>
+              ) : (showExceptionStatus && rc) ? (
+                <span className="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ color: rc.fg, background: rc.bg }}>
+                  {msg.reply_status?.replace(/_/g, ' ')}
+                </span>
+              ) : (
+                <span className="font-mono text-xs" style={{ color: 'var(--text-faint)' }}>—</span>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ObjectsDrawer({ objects, onClose }) {
+      const [search, setSearch] = useState('');
+      const normPath = (p) => (p && !p.startsWith('/') ? '/' + p : p || '');
+      const pathSegments = (p) => (p || '').split('/').filter(Boolean);
+
+      const filtered = search
+        ? objects.filter(o => {
+            const s = search.toLowerCase();
+            return (o.path || '').toLowerCase().includes(s) || (o.host || '').includes(s) || String(o.port).includes(s);
+          })
+        : objects;
+
+      const grouped = filtered.reduce((acc, obj) => {
+        const seg = pathSegments(obj.path);
+        const context = seg.length > 1 ? seg.slice(0, -1).join('/') : '(root)';
+        acc[context] = acc[context] || [];
+        acc[context].push(obj);
+        return acc;
+      }, {});
+      const contexts = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+      return (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
+          <div className="overlay-backdrop absolute inset-0 animate-fade-in" />
+          <aside
+            className="relative drawer-enter flex flex-col w-full max-w-lg border-l"
+            style={{ background: 'var(--bg-1)', borderColor: 'var(--border)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-dim)' }}>
+                  <svg className="w-5 h-5" style={{ color: 'var(--accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>CORBA Objects</h2>
+                  <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{objects.length} discovered</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="shrink-0 px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="search-input flex items-center gap-2 rounded-lg border px-3 py-2 transition-all" style={{ background: 'var(--bg-0)', borderColor: 'var(--border)' }}>
+                <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input
+                  type="text"
+                  placeholder="Search objects..."
+                  className="flex-1 bg-transparent text-sm font-mono outline-none"
+                  style={{ color: 'var(--text)' }}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  autoFocus
+                />
+                {search && (
+                  <button onClick={() => setSearch('')} className="shrink-0" style={{ color: 'var(--text-faint)' }}>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
+              {filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-16">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'var(--bg-3)' }}>
+                    <svg className="w-8 h-8" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                  </div>
+                  <p className="font-medium text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {objects.length === 0 ? 'No objects discovered' : 'No matching objects'}
+                  </p>
+                  <p className="text-xs mt-1.5 max-w-[260px]" style={{ color: 'var(--text-faint)' }}>
+                    {objects.length === 0 ? 'Objects will appear once the Naming Service is connected.' : 'Try adjusting your search query.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contexts.map(ctx => (
+                    <div key={ctx} className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg-2)' }}>
+                      <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                        <span className="font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>{ctx}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono" style={{ color: 'var(--text-faint)', background: 'var(--bg-3)' }}>{grouped[ctx].length}</span>
+                      </div>
+                      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {grouped[ctx].map((obj, i) => {
+                          const path = normPath(obj.path);
+                          const segments = pathSegments(obj.path);
+                          const name = segments.length ? segments[segments.length - 1] : path || '—';
+                          return (
+                            <div
+                              key={`${obj.path}-${obj.port}-${i}`}
+                              className="rounded-lg border px-3 py-2.5 transition-all cursor-default"
+                              style={{ background: 'var(--bg-1)', borderColor: 'var(--border)' }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.background = 'var(--bg-3)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-1)'; }}
+                              title={path}
+                            >
+                              <div className="font-mono text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{name}</div>
+                              <div className="font-mono text-[11px] mt-1" style={{ color: 'var(--text-faint)' }}>{obj.host}:{obj.port}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      );
+    }
+
+    function DetailPanel({ msg, matchedMsg, onSelectMatched, onClose, objects, messages }) {
+      const [tab, setTab] = useState('decoded');
+      useEffect(() => { setTab('decoded'); }, [msg?.id]);
+
+      if (!msg) {
+        return (
+          <aside className="flex flex-col items-center justify-center text-center border-l shrink-0" style={{ width: 420, minWidth: 380, background: 'var(--bg-1)', borderColor: 'var(--border)' }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'var(--bg-3)' }}>
+              <svg className="w-8 h-8" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Select a message</p>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--text-faint)' }}>Decoded params, hex, and metadata will appear here</p>
+          </aside>
+        );
+      }
+
+      const ti = msgTypeIcon(msg.msg_type);
+      const hasParams = msg.params?.length > 0;
+      const hasReturn = msg.return_value != null;
+      const docTree = buildDocTree(msg, objects, messages);
+      const flow = getFlowLabels(msg, objects, messages);
+      const isRequest = msg.msg_type === 'REQUEST';
+      const matchedButtonLabel = matchedMsg ? (isRequest ? 'View reply' : 'View request') : null;
+      const stats = messageStats(msg);
+      const tabs = [
+        { id: 'decoded', label: 'Decoded', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg> },
+        { id: 'hex', label: 'Hex', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6" /></svg> },
+        { id: 'meta', label: 'Meta', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+      ];
+
+      return (
+        <aside className="flex flex-col border-l shrink-0 min-h-0" style={{ width: 420, minWidth: 380, background: 'var(--bg-1)', borderColor: 'var(--border)' }}>
+          {/* Header */}
+          <div className="shrink-0 px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <span className="font-mono text-sm font-bold rounded-lg w-10 h-10 flex items-center justify-center shrink-0" style={{ background: ti.bg, color: ti.color }}>
+                  {ti.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-mono text-sm font-bold break-words leading-snug" style={{ color: 'var(--text)' }} title={msg.operation || 'Message'}>
+                    {msg.operation || 'Message'}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-[11px] font-mono" style={{ color: 'var(--text-faint)' }}>{formatTime(msg.timestamp_ms)}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--border-light)' }}>·</span>
+                    <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color: ti.color }}>{msg.msg_type}</span>
+                    {msg.reply_status && (
+                      <>
+                        <span className="text-[10px]" style={{ color: 'var(--border-light)' }}>·</span>
+                        <span className="text-[10px] font-medium" style={{ color: msg.reply_status.includes('EXCEPTION') ? 'var(--err)' : 'var(--rep)' }}>
+                          {msg.reply_status.replace(/_/g, ' ')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {(hasParams || hasReturn) && (
+                    <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ color: 'var(--rep)', background: 'var(--rep-dim)' }}>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      Decoded
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {matchedButtonLabel && (
+                  <button
+                    onClick={onSelectMatched}
+                    className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                    style={{ color: 'var(--accent)', background: 'var(--accent-dim)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-mid)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-dim)'}
+                  >
+                    {matchedButtonLabel}
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Flow bar */}
+          <div className="shrink-0 flex items-center gap-2 px-5 py-2 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-2)' }}>
+            <div className="font-mono text-[11px] flex items-center gap-1.5 truncate min-w-0">
+              <span style={{ color: 'var(--string)' }}>{flow.from}</span>
+              <svg className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              <span style={{ color: 'var(--key)' }}>{flow.to}</span>
+            </div>
+            <div className="ml-auto shrink-0 flex items-center gap-2">
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md" style={{ color: 'var(--text-faint)', background: 'var(--bg-3)' }}>#{msg.request_id}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md" style={{ color: 'var(--text-faint)', background: 'var(--bg-3)' }}>{msg.size_bytes ?? 0} B</span>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="shrink-0 flex border-b px-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-2)' }}>
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`tab-btn flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${tab === t.id ? 'active' : ''}`}
+                style={{ color: tab === t.id ? 'var(--accent)' : 'var(--text-faint)' }}
+              >
+                {t.icon}{t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden detail-scrollbar" style={{ background: 'var(--bg-0)' }}>
+            <div className="p-3 flex flex-col gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', lineHeight: 1.5 }}>
+              {tab === 'decoded' && (
+                <>
+                  {hasParams ? msg.params.map((p, i) => (
+                    <div key={i} className="rounded-xl border overflow-hidden animate-card-in" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)', animationDelay: `${i * 40}ms` }}>
+                      <div className="px-3 py-2 border-b flex items-center gap-2 flex-wrap" style={{ borderColor: 'var(--border)' }}>
+                        <span className="px-2 py-0.5 rounded-md font-semibold text-[10px]" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>param {i + 1}</span>
+                        <span className="font-semibold" style={{ color: 'var(--text)' }}>{p.name}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>({p.type_name})</span>
+                        <span className="ml-auto px-2 py-0.5 rounded-md text-[10px]" style={{ background: 'var(--rep-dim)', color: 'var(--rep)' }}>
+                          {countTopLevelFields(p.value) || 1} fields
+                        </span>
+                      </div>
+                      <pre className="whitespace-pre-wrap break-words px-3 py-2.5 leading-relaxed text-[11px]" style={{ color: 'var(--string)' }}>{formatStructuredValue(p.value)}</pre>
+                    </div>
+                  )) : (
+                    <div className="rounded-xl border text-center py-8 flex flex-col items-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-2)' }}>
+                      <svg className="w-8 h-8 mb-2" style={{ color: 'var(--text-faint)', opacity: 0.5 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                      <span className="text-xs" style={{ color: 'var(--text-faint)' }}>No parameters</span>
+                    </div>
+                  )}
+                  {hasReturn && (
+                    <div className="rounded-xl border overflow-hidden animate-card-in" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
+                      <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'var(--border)' }}>
+                        <span className="px-2 py-0.5 rounded-md font-semibold text-[10px]" style={{ background: 'var(--req-dim)', color: 'var(--req)' }}>return</span>
+                        <span className="font-semibold" style={{ color: 'var(--text)' }}>{msg.return_value.type_name}</span>
+                      </div>
+                      <pre className="whitespace-pre-wrap break-words px-3 py-2.5 leading-relaxed text-[11px]" style={{ color: 'var(--string)' }}>{formatStructuredValue(msg.return_value.value)}</pre>
+                    </div>
+                  )}
+                  <details className="rounded-xl border overflow-hidden group" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
+                    <summary className="px-3 py-2.5 cursor-pointer flex items-center gap-2 text-[10px] uppercase font-semibold tracking-wider transition-colors" style={{ color: 'var(--text-faint)' }}>
+                      <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      Document Tree
+                    </summary>
+                    <div className="p-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                      <DocNode node={docTree} depth={0} />
+                    </div>
+                  </details>
+                </>
+              )}
+
+              {tab === 'hex' && (
+                <>
+                  {msg.params_hex && (
+                    <details className="rounded-xl border overflow-hidden group" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }} open>
+                      <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer list-none text-[10px] uppercase font-semibold tracking-wider border-b transition-colors" style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}>
+                        <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        Params hex
+                        <span className="font-mono font-normal" style={{ color: 'var(--number)' }}>({Math.floor(msg.params_hex.length / 2)} B)</span>
+                        {msg.params_offset != null && <span className="font-mono ml-auto" style={{ color: 'var(--text-faint)' }}>offset={msg.params_offset}</span>}
+                      </summary>
+                      <div className="p-3">
+                        <pre className="overflow-x-auto overflow-y-auto max-h-64 whitespace-pre rounded-lg border p-3 font-mono leading-relaxed text-[10px]" style={{ background: 'var(--bg-0)', borderColor: 'var(--border)', color: 'var(--string)' }}>{formatHexDump(msg.params_hex)}</pre>
+                      </div>
+                    </details>
+                  )}
+                  {msg.raw_hex && (
+                    <details className="rounded-xl border overflow-hidden group" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
+                      <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer list-none text-[10px] uppercase font-semibold tracking-wider border-b transition-colors" style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}>
+                        <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        Raw hex
+                        <span className="font-mono font-normal" style={{ color: 'var(--number)' }}>({Math.floor(msg.raw_hex.length / 2)} B)</span>
+                      </summary>
+                      <div className="p-3">
+                        <pre className="overflow-x-auto overflow-y-auto max-h-64 whitespace-pre rounded-lg border p-3 font-mono leading-relaxed text-[10px]" style={{ background: 'var(--bg-0)', borderColor: 'var(--border)', color: 'var(--string)' }}>{formatHexDump(msg.raw_hex)}</pre>
+                      </div>
+                    </details>
+                  )}
+                  {!msg.params_hex && !msg.raw_hex && (
+                    <div className="rounded-xl border text-center py-8 flex flex-col items-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-2)' }}>
+                      <svg className="w-8 h-8 mb-2" style={{ color: 'var(--text-faint)', opacity: 0.5 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /></svg>
+                      <span className="text-xs" style={{ color: 'var(--text-faint)' }}>No hex data available</span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === 'meta' && (
+                <div className="rounded-xl border overflow-hidden" style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
+                  <div className="px-3 py-2.5 border-b text-[10px] uppercase font-semibold tracking-wider flex items-center gap-2" style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Metadata
+                  </div>
+                  <div className="p-3 space-y-0" style={{ fontSize: '11px' }}>
+                    {[
+                      ['operation', msg.operation ?? '-'],
+                      ['direction', msg.direction ?? '-'],
+                      ['request_id', msg.request_id ?? '-'],
+                      ['src', `${msg.src_ip}:${msg.src_port}`],
+                      ['dst', `${msg.dst_ip}:${msg.dst_port}`],
+                      ['giop_version', msg.giop_version ?? '-'],
+                      ['size_bytes', msg.size_bytes ?? '-'],
+                      ['object_path', msg.object_path ?? '-'],
+                      ['object_type_id', msg.object_type_id ?? '-'],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex items-start gap-3 py-2 border-b last:border-b-0 transition-colors" style={{ borderColor: 'var(--border)' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span className="w-28 shrink-0 font-medium text-right" style={{ color: 'var(--text-faint)' }}>{k}</span>
+                        <span className="font-mono break-words" style={{ color: 'var(--text)' }}>{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    function App() {
+      const [state, dispatch] = useReducer(reducer, initial);
+      const [showObjects, setShowObjects] = useState(false);
+      const filterRef = useRef(null);
+
+      const dispatchWs = useCallback((ev) => {
+        if (ev.type === 'giop_message') dispatch({ type: 'GIOP_MESSAGE', payload: ev.data });
+        else if (ev.type === 'request_timeout') dispatch({ type: 'REQUEST_TIMEOUT', payload: ev.data });
+        else if (ev.type === 'objects_updated') dispatch({ type: 'OBJECTS_UPDATED', payload: ev.data });
+        else if (ev.type === 'stats') dispatch({ type: 'STATS', payload: ev.data });
+        else if (ev.type === 'WS_OPEN') dispatch({ type: 'WS_OPEN' });
+        else if (ev.type === 'WS_CLOSE') dispatch({ type: 'WS_CLOSE' });
+        else if (ev.type === 'WS_RECONNECTING') dispatch({ type: 'WS_RECONNECTING' });
+      }, []);
+      useWs(dispatchWs);
+
+      useEffect(() => {
+        if (!state.connected) return;
+        fetch(`${API}/objects`).then(r => r.json()).then(data => dispatch({ type: 'OBJECTS', payload: data })).catch(() => {});
+        fetch(`${API}/messages?limit=100`).then(r => r.json()).then(data => dispatch({ type: 'MESSAGES_LOAD', payload: data })).catch(() => {});
+      }, [state.connected]);
+
+      useEffect(() => {
+        const handler = (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); filterRef.current?.focus(); }
+          if (e.key === 'Escape' && showObjects) setShowObjects(false);
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+      }, [showObjects]);
+
+      const clearMessages = () => { fetch(`${API}/clear`, { method: 'POST' }).then(() => dispatch({ type: 'CLEAR_MESSAGES' })); };
+
+      const exportMessages = async () => {
+        try {
+          const resp = await fetch(`${API}/messages?limit=1000`);
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const ts = new Date().toISOString().replace(/[:.]/g, '-');
+          a.href = url;
+          a.download = `orbm-messages-${ts}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.error('export failed', e);
+        }
+      };
+
+      const normPath = (p) => (p && !p.startsWith('/') ? '/' + p : p || '');
+      const selNorm = state.selectedPath ? normPath(state.selectedPath) : '';
+      const selectedObjPorts = selNorm && state.objects.length ? state.objects.filter(o => normPath(o.path) === selNorm || normPath(o.path).startsWith(selNorm + '/')).map(o => Number(o.port)) : [];
+      const selectedPathLastSegment = selNorm ? selNorm.split('/').filter(Boolean).pop() || '' : '';
+
+      const filteredMessages = state.messages.filter(m => {
+        const hiddenOps = new Set(['_is_a', 'is_a', 'resolve', '_resolve', '_non_existent', '_interface', '_repository_id', '_component']);
+        const op = (m.operation || '').trim().toLowerCase();
+        if (op && hiddenOps.has(op)) return false;
+        if (state.selectedPath) {
+          const path = normPath(m.object_path);
+          const pathMatch = path === selNorm || path.startsWith(selNorm + '/');
+          const dstPort = Number(m.dst_port), srcPort = Number(m.src_port);
+          const portMatch = selectedObjPorts.length > 0 && (selectedObjPorts.includes(dstPort) || selectedObjPorts.includes(srcPort));
+          const nameMatch = selectedPathLastSegment && !pathMatch && !portMatch && m.object_path && (m.object_path === selectedPathLastSegment || m.object_path.endsWith('/' + selectedPathLastSegment) || m.object_path === state.selectedPath.replace(/^\//, ''));
+          if (!pathMatch && !portMatch && !nameMatch) return false;
+        }
+        if (state.filterOp && (!m.operation || !m.operation.toLowerCase().includes(state.filterOp.toLowerCase()))) return false;
+        return true;
+      });
+
+      const selectedMsg = state.selectedMessage;
+      const matchedMsg = selectedMsg?.matched_id != null ? state.messages.find(m => m.id === selectedMsg.matched_id) : null;
+      const reqCount = state.messages.filter(m => m.msg_type === 'REQUEST').length;
+      const repCount = state.messages.filter(m => m.msg_type === 'REPLY').length;
+      const errCount = state.messages.filter(m => m.reply_status === 'SYSTEM_EXCEPTION' || m.reply_status === 'USER_EXCEPTION').length;
+      const avgLatency = state.stats.avg_latency_ms;
+
+      return (
+        <div className="flex flex-col h-full noise-bg" style={{ background: 'var(--bg-0)' }}>
+          {/* Gradient accent line */}
+          <div className="gradient-line h-[2px] shrink-0" />
+
+          {/* Header */}
+          <header className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b" style={{ background: 'var(--bg-1)', borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}>
+                  <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                </div>
+                <div>
+                  <h1 className="text-sm font-bold tracking-tight" style={{ color: 'var(--text)' }}>ORBM</h1>
+                  <p className="text-[10px] font-medium tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>ORB Monitoring Console</p>
+                </div>
+              </div>
+              <div className="h-6 w-px" style={{ background: 'var(--border)' }} />
+              <StatusIndicator connected={state.connected} reconnecting={state.reconnecting} />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[11px] font-medium" style={{ background: 'var(--req-dim)', color: 'var(--req)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--req)' }} />
+                  {reqCount}
+                </span>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[11px] font-medium" style={{ background: 'var(--rep-dim)', color: 'var(--rep)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--rep)' }} />
+                  {repCount}
+                </span>
+                {errCount > 0 && (
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[11px] font-medium" style={{ background: 'var(--err-dim)', color: 'var(--err)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--err)' }} />
+                    {errCount}
+                  </span>
+                )}
+              </div>
+              <div className="h-6 w-px" style={{ background: 'var(--border)' }} />
+              <button
+                onClick={() => setShowObjects(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{ color: 'var(--accent)', background: 'var(--accent-dim)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-mid)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-dim)'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                Objects
+                {state.objects.length > 0 && (
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: 'var(--accent-mid)' }}>{state.objects.length}</span>
+                )}
+              </button>
+              <button
+                onClick={exportMessages}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{ color: 'var(--text)', background: 'var(--bg-3)', border: '1px solid var(--border-light)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-4)'; e.currentTarget.style.boxShadow = '0 0 0 1px rgba(148,163,184,0.35)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-3)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M8 12l4 4m0 0l4-4m-4 4V4" />
+                </svg>
+                <span>Export JSON</span>
+              </button>
+              <button
+                onClick={clearMessages}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{ color: 'var(--text-muted)', background: 'var(--bg-3)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--err)'; e.currentTarget.style.background = 'var(--err-dim)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-3)'; }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Clear
+              </button>
+            </div>
+          </header>
+
+          {/* Stat Cards */}
+          <div className="shrink-0 grid grid-cols-4 gap-3 px-5 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-1)' }}>
+            <StatCard
+              label="Total Messages"
+              value={state.messages.length}
+              accentColor="var(--accent)"
+              bgColor="var(--accent-dim)"
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>}
+            />
+            <StatCard
+              label="Avg Latency"
+              value={avgLatency != null ? `${avgLatency.toFixed(1)} ms` : '—'}
+              accentColor="#8B5CF6"
+              bgColor="rgba(139,92,246,0.12)"
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            />
+            <StatCard
+              label="Requests"
+              value={reqCount}
+              accentColor="var(--req)"
+              bgColor="var(--req-dim)"
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>}
+            />
+            <StatCard
+              label="Errors (60s)"
+              value={state.stats.errors_60s || errCount}
+              accentColor="var(--err)"
+              bgColor="var(--err-dim)"
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+            />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex min-h-0">
+            {/* Message List */}
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
+              {/* Search Bar */}
+              <div className="shrink-0 px-5 py-2.5 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-1)' }}>
+                <div className="search-input flex items-center gap-2.5 rounded-xl border px-3.5 py-2 transition-all max-w-lg" style={{ background: 'var(--bg-0)', borderColor: 'var(--border)' }}>
+                  <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <input
+                    ref={filterRef}
+                    type="text"
+                    placeholder="Filter by operation name..."
+                    className="flex-1 bg-transparent text-sm font-mono outline-none min-w-0"
+                    style={{ color: 'var(--text)' }}
+                    value={state.filterOp}
+                    onChange={e => dispatch({ type: 'SET_FILTER', payload: { op: e.target.value } })}
+                  />
+                  {state.filterOp ? (
+                    <button onClick={() => dispatch({ type: 'SET_FILTER', payload: { op: '' } })} className="shrink-0 p-0.5 rounded transition-colors" style={{ color: 'var(--text-faint)' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  ) : (
+                    <kbd className="hidden sm:inline-flex items-center gap-0.5 shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded-md border" style={{ borderColor: 'var(--border)', color: 'var(--text-faint)', background: 'var(--bg-2)' }}>
+                      <span className="text-[9px]">⌘</span>K
+                    </kbd>
+                  )}
+                </div>
+              </div>
+
+              {/* Message List Scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
+                {filteredMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center min-h-[360px] text-center px-4">
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'var(--bg-2)' }}>
+                      <svg className="w-10 h-10" style={{ color: 'var(--text-faint)', opacity: 0.5 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    </div>
+                    <p className="text-base font-semibold" style={{ color: 'var(--text-muted)' }}>No messages yet</p>
+                    <p className="text-sm mt-2 max-w-[300px]" style={{ color: 'var(--text-faint)' }}>
+                      CORBA traffic will appear here as it's captured. Last 100 messages are retained.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {filteredMessages.map(m => (
+                      <MessageCard
+                        key={m.id}
+                        msg={m}
+                        objects={state.objects}
+                        messages={state.messages}
+                        isSelected={state.selectedMessage?.id === m.id}
+                        onSelect={() => dispatch({ type: 'SELECT_MESSAGE', payload: m })}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Detail Panel */}
+            <DetailPanel
+              msg={selectedMsg}
+              matchedMsg={matchedMsg}
+              onSelectMatched={() => dispatch({ type: 'SELECT_MESSAGE', payload: matchedMsg })}
+              onClose={() => dispatch({ type: 'SELECT_MESSAGE', payload: null })}
+              objects={state.objects}
+              messages={state.messages}
+            />
+          </div>
+
+          {/* Objects Drawer */}
+          {showObjects && <ObjectsDrawer objects={state.objects} onClose={() => setShowObjects(false)} />}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
