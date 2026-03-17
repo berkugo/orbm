@@ -36,31 +36,55 @@ by the backend in web mode.
 
 ## Build
 
-From `cpp/`:
+From repo root:
 
 ```bash
-mkdir -p build
-cd build
-cmake ..
-cmake --build .
+# Web UI + CLI (default)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
 ```
 
 This produces the executable:
 
-- `./orbm` – main binary
+- `build/orbm` – main binary (web UI + CLI)
+
+### CLI-only build (no web UI / no external header-only deps)
+
+On environments where you cannot fetch external libraries (asio, Crow, nlohmann/json) you can build a CLI-only binary:
+
+```bash
+cmake -S . -B build-cli -DCMAKE_BUILD_TYPE=Release -DORBM_NO_UI=ON
+cmake --build build-cli -j
+```
+
+This produces:
+
+- `build-cli/orbm` – CLI-only binary (no HTTP server, no `/ws`, `/api/*`, or static frontend)
 
 ### Dependencies
 
 - C++17 compiler
 - CMake >= 3.14
 - libpcap
-- ACE + TAO runtime (for `tao_nslist` / `tao_catior` and TAO-based apps)
+- ACE + TAO runtime (for TAO command-line utilities and TAO-based apps)
 
-External libraries are fetched automatically via CMake `FetchContent`:
+External libraries (for web UI build) are fetched automatically via CMake `FetchContent`:
 
-- [asio](https://github.com/chriskohlhoff/asio) (standalone)
-- [Crow](https://github.com/CrowCpp/Crow)
-- [nlohmann/json](https://github.com/nlohmann/json)
+- [asio](https://github.com/chriskohlhoff/asio) (standalone, header-only)
+- [Crow](https://github.com/CrowCpp/Crow) (header-only)
+- [nlohmann/json](https://github.com/nlohmann/json) (header-only)
+
+### TAO utilities (current limitation)
+
+For Naming Service discovery, ORBM currently shells out to the **TAO utilities**:
+
+- `tao_nslist` – to list objects registered in the Naming Service
+- `tao_catior` – to resolve IORs into host/port/object-key information
+
+These binaries are expected to come from an existing **ACE/TAO installation** (for example via `ACE_ROOT/bin/tao_nslist`, `ACE_ROOT/bin/tao_catior`).  
+If these tools are **not** available on your system, **NameService discovery and the web UI object list will not work**, and the application will not behave correctly in web/inspection mode.
+
+The ACE/TAO dependency is **temporary**: the plan is to replace these external calls with a native implementation of IOR parsing and Naming Service querying inside ORBM, removing the requirement for TAO utilities in a future version.
 
 Make sure `ACE_ROOT` and `LD_LIBRARY_PATH` are set when running:
 
