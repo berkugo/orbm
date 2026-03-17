@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="ORBM banner" src="docs/banner.svg" width="100%" />
+  <img alt="ORBM banner" src="docs/banner.svg" style="max-width: 100%; width: 100%; height: auto;" />
 </p>
 
 # ORB Monitoring (ORBM)
