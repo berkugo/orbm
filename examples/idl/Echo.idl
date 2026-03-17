@@ -1,0 +1,8 @@
+// Echo.idl - CORBA string echo (ACE/TAO compatible)
+module EchoModule {
+    interface Echo {
+        string echo_string(in string message);
+        void ping();
+        oneway void heartbeat(in string sender_id);
+    };
+};

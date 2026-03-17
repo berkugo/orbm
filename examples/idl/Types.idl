@@ -1,0 +1,13 @@
+// Types.idl - Shared structs for CORBA (used by Config, DataService, callbacks)
+module TypesModule {
+    struct SensorData {
+        long id;
+        string name;
+        double value;
+    };
+    struct ConfigEntry {
+        string key;
+        string value;
+        long timestamp;
+    };
+};

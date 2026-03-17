@@ -1,0 +1,89 @@
+// AppExtended.idl — Struct'ların field'ları başka IDL'deki (CommonTypedefs) typedef'lere referans verir.
+#include "CommonTypedefs.idl"
+
+module TypesModule {
+    // Sequence typedef'leri bu modülde de kullanıma açık (CommonTypes'tan alıyoruz)
+    typedef CommonTypes::StringSeq StringSeq;
+    typedef CommonTypes::OctetSeq OctetSeq;
+    typedef CommonTypes::LongSeq LongSeq;
+    typedef CommonTypes::DoubleSeq DoubleSeq;
+    typedef CommonTypes::KvSeq KvSeq;
+    typedef CommonTypes::MetricSeq MetricSeq;
+    typedef CommonTypes::InnerDataSeq InnerDataSeq;
+
+    // Struct'lar: field tipleri başka IDL'deki typedef/struct (CommonTypes)
+    struct Sample {
+        long t_ms;
+        double reading;
+        CommonTypes::OctetSeq payload;
+    };
+    typedef sequence<TypesModule::Sample> SampleSeq;
+
+    struct Meta {
+        long source_id;
+        string source_name;
+        CommonTypes::StringSeq tags;
+        CommonTypes::KvSeq attributes;
+        CommonTypes::Location loc;
+    };
+
+    struct SensorData {
+        long id;
+        string name;
+        double value;
+        TypesModule::Meta meta;
+        CommonTypes::MetricSeq metrics;
+        TypesModule::SampleSeq samples;
+        CommonTypes::LongSeq histogram;
+        CommonTypes::DoubleSeq spectrum;
+    };
+
+    struct ConfigEntry {
+        string key;
+        string value;
+        long timestamp;
+    };
+    typedef sequence<TypesModule::ConfigEntry> ConfigEntrySeq;
+
+    struct OuterData {
+        CommonTypes::InnerData inner;
+        long count;
+    };
+
+    struct ConfigSnapshot {
+        TypesModule::ConfigEntrySeq entries;
+        long version;
+        TypesModule::OuterData meta;
+    };
+};
+
+module BaseModule {
+    interface BaseService {
+        void ping();
+        string get_info();
+    };
+};
+
+module ConfigModule {
+    interface Config : BaseModule::BaseService {
+        void get_value(in string key, out string value);
+        void set_value(in string key, in string value);
+        boolean try_get(in string key, inout string value);
+        long get_counter(out long current);
+        void set_entry(in TypesModule::ConfigEntry e);
+        TypesModule::ConfigEntry get_entry(in string key);
+    };
+};
+
+module DataServiceModule {
+    interface ClientCallback {
+        oneway void on_telemetry(in TypesModule::SensorData data);
+        oneway void on_config(in TypesModule::ConfigSnapshot cfg);
+    };
+    interface DataService : BaseModule::BaseService {
+        void register_client(in string client_id);
+        void submit_sensor(in TypesModule::SensorData data);
+        TypesModule::SensorData get_sensor(in long id);
+        void register_callback(in ClientCallback cb);
+    };
+};

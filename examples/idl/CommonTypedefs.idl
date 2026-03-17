@@ -1,0 +1,33 @@
+// CommonTypedefs.idl — İşyeri senaryosu: typedef'ler ve temel tipler ayrı IDL'de.
+// AppExtended.idl bu dosyayı kullanır; struct alanları burada tanımlı tiplere referans verir.
+module CommonTypes {
+    typedef sequence<string> StringSeq;
+    typedef sequence<octet> OctetSeq;
+    typedef sequence<long> LongSeq;
+    typedef sequence<double> DoubleSeq;
+
+    struct Kv {
+        string k;
+        string v;
+    };
+    typedef sequence<Kv> KvSeq;
+
+    struct Metric {
+        string name;
+        double value;
+    };
+    typedef sequence<Metric> MetricSeq;
+
+    struct Location {
+        double lat;
+        double lon;
+        double alt;
+    };
+
+    // Örnek: başka IDL'de kullanılacak basit struct
+    struct InnerData {
+        long id;
+        string tag;
+    };
+    typedef sequence<InnerData> InnerDataSeq;
+};

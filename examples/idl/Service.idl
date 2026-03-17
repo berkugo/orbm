@@ -1,0 +1,10 @@
+// Service.idl - Mixed operations (ACE 5.7 / TAO style)
+module ServiceModule {
+    interface Service {
+        string resolve(in string name);
+        void register(in string name, in string ior);
+        oneway void notify(in string event);
+        short get_status();
+        void shutdown();
+    };
+};

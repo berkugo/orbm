@@ -1,0 +1,9 @@
+// Config.idl - in/out/inout parameters (CORBA standard) - legacy; see AppExtended.idl for struct + inheritance
+module ConfigModule {
+    interface Config {
+        void get_value(in string key, out string value);
+        void set_value(in string key, in string value);
+        boolean try_get(in string key, inout string value);
+        long get_counter(out long current);
+    };
+};

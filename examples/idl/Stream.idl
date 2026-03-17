@@ -1,0 +1,10 @@
+// Stream.idl - Octet and boolean (IIOP/GIOP compatible)
+module StreamModule {
+    interface Stream {
+        octet read_byte();
+        void write_byte(in octet b);
+        boolean is_ready();
+        void set_flag(in boolean enabled);
+        long send_buffer(in string data);
+    };
+};

@@ -1,0 +1,10 @@
+// DataService.idl - Inherits BaseService, uses structs
+#include "Base.idl"
+#include "Types.idl"
+
+module DataServiceModule {
+    interface DataService : BaseModule::BaseService {
+        void submit_sensor(in TypesModule::SensorData data);
+        TypesModule::SensorData get_sensor(in long id);
+    };
+};

@@ -1,0 +1,7 @@
+// Base.idl - Base interface inherited by Config and DataService
+module BaseModule {
+    interface BaseService {
+        void ping();
+        string get_info();
+    };
+};

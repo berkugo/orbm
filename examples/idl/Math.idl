@@ -1,0 +1,10 @@
+// Math.idl - Numeric operations (OMG IDL basic types)
+module MathModule {
+    interface Math {
+        long add(in long a, in long b);
+        long long multiply(in long long x, in long long y);
+        float divide(in float a, in float b);
+        double power(in double base, in double exp);
+        unsigned long factorial(in unsigned short n);
+    };
+};

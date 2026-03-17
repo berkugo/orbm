@@ -94,6 +94,10 @@ Then open:
 - `http://localhost:3000/api/messages` – raw JSON messages
 - `http://localhost:3000/api/objects` – discovered Naming Service objects
 
+Web UI (shown in figure below):
+
+![ORBM web UI](docs/web-ui.png)
+
 ### CLI mode
 
 ```bash

@@ -1,0 +1,10 @@
+// Hello.idl - Simple CORBA test interface
+module HelloModule {
+    typedef sequence<long> LongSeq;
+    interface Hello {
+        string say_hello(in string name);
+        long add(in long a, in long b);
+        long sum_ids(in LongSeq ids);
+        oneway void shutdown();
+    };
+};
