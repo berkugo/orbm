@@ -43,10 +43,10 @@
     <text x="86" y="150" font-size="84" font-weight="800" fill="#f7f8ff" letter-spacing="1.5">ORBM</text>
     <rect x="86" y="168" width="250" height="8" rx="4" fill="url(#accent)" opacity="0.95"/>
     <text x="86" y="218" font-size="30" font-weight="600" fill="#cfd6ff" opacity="0.95">
-      ORB Monitoring  CORBA / TAO traffic inspector
+      ORB Monitoring — CORBA / TAO traffic inspector
     </text>
     <text x="86" y="255" font-size="18" font-weight="500" fill="#aeb7ff" opacity="0.85">
-      Passive capture " GIOP + CDR decode via IDL " Web UI + CLI
+      Passive capture • GIOP + CDR decode via IDL • Web UI + CLI
     </text>
   </g>
 </svg>
