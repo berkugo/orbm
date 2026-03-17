@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="ORBM banner" src="docs/banner.svg" width="100%" />
+</p>
+
 # ORB Monitoring (ORBM)
 
 **ORBM** (ORB Monitoring) is a modern traffic inspector for CORBA / TAO systems.
