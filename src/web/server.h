@@ -9,7 +9,10 @@
 #pragma once
 
 #include "core/types.h"
+
+#ifndef ORBM_NO_UI
 #include "crow.h"
+#endif
 #include <set>
 #include <mutex>
 #include <memory>
@@ -25,10 +28,14 @@ struct AppState {
     size_t max_messages = 100;
     std::shared_ptr<SharedData<std::string>> interface_name;
     std::mutex ws_mutex;
+#ifndef ORBM_NO_UI
     std::set<crow::websocket::connection*> ws_connections;
+#endif
 };
 
+#ifndef ORBM_NO_UI
 // Creates and configures a Crow application bound to the given `AppState`.
 // `frontend_dir` can be used to override the auto-detected location of the
 // static web assets (primarily for tests and custom packaging).
 crow::SimpleApp create_app(std::shared_ptr<AppState> state, const std::string& frontend_dir);
+#endif

@@ -195,7 +195,11 @@ int main(int argc, char* argv[]) {
                              msg_channel, message_id, stop_flag, idl_registry);
     });
 
-    if (args.cli_mode) {
+    if (args.cli_mode
+#ifdef ORBM_NO_UI
+        || true  // CLI-only build: always use CLI path
+#endif
+    ) {
         CliConfig cli_cfg;
         cli_cfg.interface = args.interface;
         cli_cfg.ns_ref = args.ns_ref;
@@ -210,6 +214,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+#ifndef ORBM_NO_UI
     // --- Web UI mode ---
 
     auto ws_channel = std::make_shared<Channel<WsEvent>>();
@@ -300,4 +305,9 @@ int main(int argc, char* argv[]) {
     if (ws_broadcast_thread.joinable()) ws_broadcast_thread.join();
 
     return 0;
+#else
+    // Should not be reachable because CLI path is forced above when ORBM_NO_UI is set.
+    std::cerr << "[error] Web UI is disabled in this build.\n";
+    return 1;
+#endif
 }

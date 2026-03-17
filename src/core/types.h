@@ -4,7 +4,7 @@
 // - wire-level CORBA / GIOP metadata (`GiopMessage`, `CorbaNamingEntry`)
 // - IDL-derived operation signatures (`OpSignature`, `IdlParam`)
 // - small synchronization helpers (`SharedData<T>`, `Channel<T>`)
-// - JSON serialization glue for the HTTP / WebSocket API.
+// - JSON serialization glue for the HTTP / WebSocket API (when ORBM_NO_UI is off).
 //
 #pragma once
 
@@ -21,7 +21,10 @@
 #include <memory>
 #include <atomic>
 #include <functional>
+
+#ifndef ORBM_NO_UI
 #include <nlohmann/json.hpp>
+#endif
 
 class IdlRegistry; // forward decl — defined in idl/idl_parser.h
 
@@ -149,6 +152,7 @@ using StructFields = std::vector<std::pair<std::string, std::string>>;
 
 // ─── JSON serialization ───────────────────────────────────────────────────
 
+#ifndef ORBM_NO_UI
 inline void to_json(nlohmann::json& j, const DecodedParam& p) {
     j = {{"name", p.name}, {"type_name", p.type_name}, {"value", p.value}};
 }
@@ -190,6 +194,7 @@ inline void to_json(nlohmann::json& j, const GiopMessage& m) {
     if (m.return_value) j["return_value"] = *m.return_value;
     if (m.out_params && !m.out_params->empty()) j["out_params"] = *m.out_params;
 }
+#endif
 
 // ─── Thread-safe shared data wrapper ──────────────────────────────────────
 
@@ -273,6 +278,7 @@ struct WsEvent {
     std::optional<std::vector<CorbaNamingEntry>> objects;
 };
 
+#ifndef ORBM_NO_UI
 inline nlohmann::json ws_event_to_json(const WsEvent& ev) {
     nlohmann::json j;
     switch (ev.type) {
@@ -291,6 +297,7 @@ inline nlohmann::json ws_event_to_json(const WsEvent& ev) {
     }
     return j;
 }
+#endif
 
 // ─── Discovery config ─────────────────────────────────────────────────────
 
