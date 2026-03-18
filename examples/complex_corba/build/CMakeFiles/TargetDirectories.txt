@@ -1,4 +1,0 @@
-/root/orbm/examples/complex_corba/build/CMakeFiles/complex_corba_server.dir
-/root/orbm/examples/complex_corba/build/CMakeFiles/complex_corba_client.dir
-/root/orbm/examples/complex_corba/build/CMakeFiles/edit_cache.dir
-/root/orbm/examples/complex_corba/build/CMakeFiles/rebuild_cache.dir
