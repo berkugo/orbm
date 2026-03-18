@@ -24,6 +24,11 @@ inline std::string str_trim(const std::string& s) {
     return s.substr(start, end - start + 1);
 }
 
+inline bool str_has_suffix(const std::string& s, const std::string& suffix) {
+    return s.size() >= suffix.size() &&
+           s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 std::string strip_bom(const std::string& src) {
     if (src.size() >= 3 &&
         static_cast<unsigned char>(src[0]) == 0xEF &&
@@ -559,19 +564,32 @@ void parse_tokens(
                     while (j < tokens.size() && tokens[j] != "}") {
                         UnionBranch branch;
 
-                        while (j < tokens.size() && (tokens[j] == "case" || tokens[j] == "default")) {
-                            if (tokens[j] == "default") {
+                        while (j < tokens.size() &&
+                               (tokens[j] == "case" || tokens[j] == "default" || tokens[j] == "default:")) {
+                            if (tokens[j] == "default" || tokens[j] == "default:") {
                                 branch.case_labels.push_back("default");
                                 ++j;
                                 if (j < tokens.size() && tokens[j] == ":") ++j;
                             } else {
                                 ++j; // skip "case"
                                 std::string label;
-                                while (j < tokens.size() && tokens[j] != ":") {
-                                    label += tokens[j]; ++j;
+                                while (j < tokens.size()) {
+                                    std::string part = tokens[j];
+                                    bool end_of_label = false;
+                                    if (part == ":") {
+                                        ++j;
+                                        break;
+                                    }
+                                    if (str_has_suffix(part, ":")) {
+                                        part.pop_back();
+                                        end_of_label = true;
+                                    }
+                                    label += part;
+                                    ++j;
+                                    if (end_of_label) break;
                                 }
                                 branch.case_labels.push_back(label);
-                                if (j < tokens.size()) ++j; // skip ":"
+                                if (j < tokens.size() && tokens[j] == ":") ++j;
                             }
                         }
 

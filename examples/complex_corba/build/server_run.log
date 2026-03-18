@@ -1,0 +1,20 @@
+[Server] DemoRoot IOR: IOR:010000001600000049444c3a44656d6f2f44656d6f526f6f743a312e300000000100000000000000780000000101020017000000737276313234313532382e68737467722e636c6f75640000758200001b00000014010f0052535438c4ba69bcc809000400000001000000050000000002000000000000000800000001a60000004f4154010000001800000001a600000100010001000000010001050901010000000000
+[Server] DemoRoot corbaloc: corbaloc:iiop:127.0.0.1:4501/DemoRoot
+[Server] Wrote IOR to server.ior
+[Server] MathService::add(7,5)
+[Server] MathService::dot(LongVec,LongVec)
+[Server] MathService::scale(seq<long>, 3) len=5
+[Server] MathService::sum_samples(Record)
+[Server] StoreService::put(id=r1, ver=1)
+[Server] StoreService::get(id=r1, ver=1)
+[Server] StoreService::get(id=missing, ver=1)
+[Server] StoreService::list_by_tag(t1)
+[Server] StoreService::normalize(Variant)
+[Server] StoreService::flip(BoolVariant)
+[Server] StoreService::tint(ColorVariant)
+[Server] AnyService::echo_any(any)
+[Server] AnyService::echo_nested_any(any)
+[Server] AnyService::map_any(any)
+[Server] AnyService::describe_any(any,seq)
+[Server] BigPayload::get_blob(1048576)
+[Server] DemoRoot::shutdown

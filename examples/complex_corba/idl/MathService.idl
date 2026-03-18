@@ -1,0 +1,18 @@
+// Math service: scalar + sequence + array parameters.
+#ifndef DEMO_MATHSERVICE_IDL
+#define DEMO_MATHSERVICE_IDL
+
+#include "CommonTypes.idl"
+#include "Exceptions.idl"
+
+module Demo {
+  interface MathService {
+    long add(in long a, in long b);
+    double dot(in LongVec a, in LongVec b);
+    LongSeq scale(in LongSeq xs, in long factor);
+    long sum_samples(in Record r) raises(ValidationError);
+  };
+};
+
+#endif // DEMO_MATHSERVICE_IDL
+

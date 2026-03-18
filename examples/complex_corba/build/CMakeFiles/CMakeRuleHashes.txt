@@ -1,0 +1,7 @@
+# Hashes of file build rules.
+01cafd0433d8637e9045637ce6d2360d gen/AnyServiceC.h
+b6352b5bea741e904d16f3b04920b060 gen/BigPayloadC.h
+50dda5d9d1d703328518683357e627e1 gen/CommonTypesC.h
+26433e56a8ffe1cbd72ea2fecf13ba03 gen/ExceptionsC.h
+b3e7dba8aa8dd339d005015c8c1b1666 gen/MathServiceC.h
+984b37d4bcd3c35fb74b159074c52efa gen/StoreServiceC.h

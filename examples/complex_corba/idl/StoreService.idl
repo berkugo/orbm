@@ -1,0 +1,23 @@
+// Store service: nested struct/sequence + unions.
+#ifndef DEMO_STORESERVICE_IDL
+#define DEMO_STORESERVICE_IDL
+
+#include "CommonTypes.idl"
+#include "Exceptions.idl"
+
+module Demo {
+  typedef sequence<Record> RecordList;
+
+  interface StoreService {
+    void put(in Record r) raises(ValidationError);
+    Record get(in Key k) raises(NotFound);
+    RecordList list_by_tag(in ShortString tag);
+
+    Variant normalize(in Variant v);
+    BoolVariant flip(in BoolVariant v);
+    ColorVariant tint(in ColorVariant v);
+  };
+};
+
+#endif // DEMO_STORESERVICE_IDL
+

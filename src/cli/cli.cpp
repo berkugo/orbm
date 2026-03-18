@@ -157,7 +157,7 @@ void run_cli(
     std::shared_ptr<std::atomic<bool>> stop_flag)
 {
     std::cout << BOLD << CYAN
-              << "\n  TAO Inspector — CLI Mode\n" << RESET;
+              << "\n  ORBM — CLI Mode\n" << RESET;
     std::cout << DIM << "  Interface: " << cli_cfg.interface
               << "  |  NS: " << cli_cfg.ns_ref
               << "  |  Buffer: " << cli_cfg.buffer

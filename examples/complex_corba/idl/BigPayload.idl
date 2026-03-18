@@ -1,0 +1,18 @@
+// Big payload: create large responses to trigger fragmentation.
+#ifndef DEMO_BIGPAYLOAD_IDL
+#define DEMO_BIGPAYLOAD_IDL
+
+#include "CommonTypes.idl"
+#include "Exceptions.idl"
+
+module Demo {
+  typedef sequence<octet> Octets;
+
+  interface BigPayload {
+    Octets get_blob(in unsigned long size) raises(ValidationError);
+    Record get_big_record(in unsigned long size) raises(ValidationError);
+  };
+};
+
+#endif // DEMO_BIGPAYLOAD_IDL
+

@@ -292,7 +292,7 @@ int main(int argc, char* argv[]) {
     });
 
     auto app = create_app(app_state, "");
-    std::cout << "[info] TAO Inspector listening on http://" << args.host << ":" << args.ws_port << std::endl;
+    std::cout << "[info] ORBM listening on http://" << args.host << ":" << args.ws_port << std::endl;
     app.bindaddr(args.host).port(args.ws_port).multithreaded().run();
 
     stop_flag->store(true, std::memory_order_relaxed);

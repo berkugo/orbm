@@ -1,0 +1,20 @@
+// Exceptions used by the complex CORBA demo.
+#ifndef DEMO_EXCEPTIONS_IDL
+#define DEMO_EXCEPTIONS_IDL
+
+#include "CommonTypes.idl"
+
+module Demo {
+  exception ValidationError {
+    ShortString field;
+    ShortString message;
+  };
+
+  exception NotFound {
+    ShortString resource;
+    ShortString id;
+  };
+};
+
+#endif // DEMO_EXCEPTIONS_IDL
+

@@ -13,6 +13,7 @@ public:
 
 #include <cstring>
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <iomanip>
 #include <memory>
@@ -294,6 +295,9 @@ public:
     TypeCodeReader(const uint8_t* data, size_t start, size_t end, bool le)
         : data_(data), base_(start), pos_(start), end_(end), le_(le) {}
 
+    TypeCodeReader(const uint8_t* data, size_t base, size_t pos, size_t end, bool le)
+        : data_(data), base_(base), pos_(pos), end_(end), le_(le) {}
+
     size_t pos() const { return pos_; }
     size_t end() const { return end_; }
     const uint8_t* data() const { return data_; }
@@ -396,7 +400,18 @@ static std::optional<TypeCodeReader> read_typecode_encapsulation(TypeCodeReader&
     auto byte_order = r.read_u8();
     if (!byte_order) return std::nullopt;
     r.set_pos(end);
-    return TypeCodeReader(r.data(), start + 1, end, *byte_order != 0);
+    return TypeCodeReader(r.data(), start, start + 1, end, *byte_order != 0);
+}
+
+static std::string normalize_union_label(std::string s) {
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
+    if (!s.empty() && s.back() == ':') s.pop_back();
+    if (s == "TRUE") return "true";
+    if (s == "FALSE") return "false";
+    auto pos = s.rfind("::");
+    if (pos != std::string::npos) return s.substr(pos + 2);
+    return s;
 }
 
 static std::optional<int32_t> read_typecode_label(TypeCodeReader& r, const TCDesc& switch_desc) {
@@ -449,9 +464,7 @@ static std::optional<TCDesc> parse_typecode(TypeCodeReader& r, unsigned int dept
     switch (static_cast<TCKind>(*k)) {
         case TCKind::tk_string:
         case TCKind::tk_wstring: {
-            auto enc = read_typecode_encapsulation(r);
-            if (!enc) return std::nullopt;
-            auto b = enc->read_u32();
+            auto b = r.read_u32();
             if (!b) return std::nullopt;
             desc.bound = *b;
             break;
@@ -1045,14 +1058,14 @@ std::optional<std::string> CdrCursor::decode_union(const UnionDef& def,
     auto disc_val = decode_type(def.discriminator_type, registry);
     if (!disc_val) return std::nullopt;
 
-    std::string disc_str = *disc_val;
+    std::string disc_str = normalize_union_label(*disc_val);
     const UnionBranch* matched = nullptr;
     const UnionBranch* default_branch = nullptr;
 
     for (const auto& branch : def.branches) {
         for (const auto& label : branch.case_labels) {
             if (label == "default") { default_branch = &branch; continue; }
-            if (label == disc_str) { matched = &branch; break; }
+            if (normalize_union_label(label) == disc_str) { matched = &branch; break; }
         }
         if (matched) break;
     }

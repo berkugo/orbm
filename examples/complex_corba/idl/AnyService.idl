@@ -1,0 +1,18 @@
+// Any service: any roundtrip, nested any, sequences of any.
+#ifndef DEMO_ANYSERVICE_IDL
+#define DEMO_ANYSERVICE_IDL
+
+#include "CommonTypes.idl"
+#include "Exceptions.idl"
+
+module Demo {
+  interface AnyService {
+    any echo_any(in any v);
+    any map_any(in any v);
+    any echo_nested_any(in any v);
+    ShortString describe_any(in any v, in ShortString hint);
+  };
+};
+
+#endif // DEMO_ANYSERVICE_IDL
+

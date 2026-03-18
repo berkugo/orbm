@@ -2,7 +2,7 @@
 
 # ORB Monitoring (ORBM)
 
-**ORBM** (ORB Monitoring) is a modern traffic inspector for CORBA / TAO systems.
+**ORBM** (ORB Monitoring) is a modern traffic inspector for CORBA / GIOP systems.
 It passively captures GIOP traffic from the network, decodes CDR payloads using
 your IDL files, and presents them either:
 
@@ -18,7 +18,7 @@ by the backend in web mode.
 ## Features
 
 - Live capture from a network interface using **libpcap**
-- Transparent support for **TAO / ACE** GIOP 1.0–1.2
+- Works with **TAO and other CORBA ORBs** that speak GIOP 1.0–1.2
 - IDL-aware decoding via a custom **IDL parser**
   - structs (including nested and cross-module types)
   - sequences, arrays, typedef chains
@@ -54,7 +54,7 @@ This produces the executable:
 - C++17 compiler
 - CMake >= 3.14
 - libpcap
-- ACE + TAO runtime (for `tao_nslist` / `tao_catior` and TAO-based apps)
+- ACE + TAO runtime (currently for `tao_nslist` / `tao_catior` during Naming Service discovery)
 
 External libraries are fetched automatically via CMake `FetchContent`:
 
@@ -69,7 +69,7 @@ export ACE_ROOT=/root/project_x/corba_Viewer/ACE_wrappers
 export LD_LIBRARY_PATH="$ACE_ROOT/lib:${LD_LIBRARY_PATH}"
 ```
 
-You will also need a TAO Naming Service and your CORBA apps running, as in the
+You will also need a CORBA Naming Service and your CORBA apps running, as in the
 example setup under `../cpp_test`.
 
 ---

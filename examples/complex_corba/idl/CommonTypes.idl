@@ -1,0 +1,96 @@
+// Common types for the complex CORBA demo.
+#ifndef DEMO_COMMON_TYPES_IDL
+#define DEMO_COMMON_TYPES_IDL
+
+module Demo {
+  typedef string<32> ShortString;
+  typedef wstring<32> ShortWString;
+
+  typedef sequence<long> LongSeq;
+  typedef sequence<octet> OctetSeq;
+
+  typedef long LongVec[16];
+  typedef octet Blob2D[8][64];
+
+  enum Color {
+    RED,
+    GREEN,
+    BLUE,
+    OTHER
+  };
+
+  struct Key {
+    ShortString id;
+    unsigned long version;
+  };
+
+  struct Meta {
+    ShortString tag;
+    ShortWString note;
+    Color color_value;
+  };
+
+  // Deeply nested struct chain to verify recursive decoding:
+  // L4 -> L3 -> L2 -> L1 -> Record.deep_value
+  struct L4 {
+    ShortString s;
+    unsigned long n;
+  };
+
+  struct L3 {
+    L4 lvl4;
+    ShortWString w;
+  };
+
+  struct L2 {
+    L3 lvl3;
+    ShortString a;
+  };
+
+  struct L1 {
+    L2 lvl2;
+    ShortWString b;
+  };
+
+  struct Record {
+    Key key_value;
+    Meta meta_value;
+    L1 deep_value;
+    sequence<long, 64> samples;
+    OctetSeq payload;
+  };
+
+  // Union with long discriminator.
+  union Variant switch (long) {
+    case 0: long asLong;
+    case 1: double asDouble;
+    case 2: ShortString asString;
+    default: sequence<octet> asBlob;
+  };
+
+  // Union with boolean discriminator.
+  union BoolVariant switch (boolean) {
+    case TRUE: ShortString t;
+    case FALSE: ShortWString f;
+  };
+
+  // Union with enum discriminator.
+  union ColorVariant switch (Color) {
+    case RED: long r;
+    case GREEN: long g;
+    case BLUE: long b;
+    default: ShortString other;
+  };
+
+  // Single entry-point object so the client only needs one IOR.
+  interface DemoRoot {
+    Object get_math();
+    Object get_store();
+    Object get_any();
+    Object get_big();
+    void shutdown();
+  };
+};
+
+#endif // DEMO_COMMON_TYPES_IDL
+
